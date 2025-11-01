@@ -7,6 +7,16 @@
 #property version   "1.00"
 
 //+------------------------------------------------------------------+
+//| Trend Direction Enumeration                                       |
+//+------------------------------------------------------------------+
+enum ENUM_TREND_DIRECTION
+{
+   TREND_BULLISH,
+   TREND_BEARISH,
+   TREND_NEUTRAL
+};
+
+//+------------------------------------------------------------------+
 //| Structure for Support/Resistance Levels                          |
 //+------------------------------------------------------------------+
 struct SRLevel
