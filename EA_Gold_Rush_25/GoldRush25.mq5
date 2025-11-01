@@ -207,12 +207,21 @@ int OnInit()
 
    g_IsInitialized = true;
 
+   // Display current date/time for backtest verification
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+
    Print("=================================================");
    Print("GoldRush25 EA - Initialization Successful");
    Print("Symbol: ", _Symbol);
    Print("Magic Number: ", MagicNumber);
+   Print("Current Date/Time: ", dt.year, "-", dt.mon, "-", dt.day, " ", dt.hour, ":", dt.min);
    Print("Risk per Trade: ", RiskPercent, "%");
    Print("Risk:Reward Ratio: ", GetRRRatioString(RiskRewardRatio));
+   Print("Trading Sessions:");
+   if(Trade_LondonSession) Print("  - London: ", London_StartTime, " - ", London_EndTime);
+   if(Trade_NewYorkSession) Print("  - New York: ", NewYork_StartTime, " - ", NewYork_EndTime);
+   if(Trade_AsianSession) Print("  - Asian: 00:00 - 07:00");
    Print("Strategies Enabled:");
    if(UseStrategy_TrendContinuation) Print("  - Trend Continuation");
    if(UseStrategy_SupportResistance) Print("  - Support/Resistance Bounce");
@@ -290,18 +299,81 @@ void OnTick()
    // Update period tracking (daily/weekly resets)
    UpdatePeriodTracking();
 
-   // Pre-trading checks
-   if(!IsTradingAllowed()) return;
-   if(IsHighImpactNewsTime()) return;
-   if(!IsWithinTradingSession()) return;
-   if(DailyLossLimitReached()) return;
-   if(WeeklyLossLimitReached()) return;
+   // Pre-trading checks with debug logging
+   if(!IsTradingAllowed())
+   {
+      static datetime lastTradingNotAllowedLog = 0;
+      if(TimeCurrent() - lastTradingNotAllowedLog > 3600) // Log once per hour
+      {
+         Print("DEBUG: Trading not allowed - Check terminal/EA permissions");
+         lastTradingNotAllowedLog = TimeCurrent();
+      }
+      return;
+   }
+
+   if(IsHighImpactNewsTime())
+   {
+      static datetime lastNewsLog = 0;
+      if(TimeCurrent() - lastNewsLog > 3600)
+      {
+         Print("DEBUG: High impact news time - Trading blocked");
+         lastNewsLog = TimeCurrent();
+      }
+      return;
+   }
+
+   if(!IsWithinTradingSession())
+   {
+      static datetime lastSessionLog = 0;
+      if(TimeCurrent() - lastSessionLog > 3600) // Log once per hour
+      {
+         MqlDateTime dt;
+         TimeToStruct(TimeCurrent(), dt);
+         Print("DEBUG: Outside trading session - Current time: ", dt.hour, ":", dt.min,
+               " | London: ", Trade_LondonSession ? "ON" : "OFF", " (", London_StartTime, "-", London_EndTime, ")",
+               " | NY: ", Trade_NewYorkSession ? "ON" : "OFF", " (", NewYork_StartTime, "-", NewYork_EndTime, ")",
+               " | Asian: ", Trade_AsianSession ? "ON" : "OFF");
+         lastSessionLog = TimeCurrent();
+      }
+      return;
+   }
+
+   if(DailyLossLimitReached())
+   {
+      static datetime lastDailyLog = 0;
+      if(TimeCurrent() - lastDailyLog > 3600)
+      {
+         Print("DEBUG: Daily loss limit reached");
+         lastDailyLog = TimeCurrent();
+      }
+      return;
+   }
+
+   if(WeeklyLossLimitReached())
+   {
+      static datetime lastWeeklyLog = 0;
+      if(TimeCurrent() - lastWeeklyLog > 3600)
+      {
+         Print("DEBUG: Weekly loss limit reached");
+         lastWeeklyLog = TimeCurrent();
+      }
+      return;
+   }
 
    // Manage existing open trades
    ManageOpenTrades();
 
    // Check if we can open new positions
-   if(MaxPositionsReached()) return;
+   if(MaxPositionsReached())
+   {
+      static datetime lastMaxPosLog = 0;
+      if(TimeCurrent() - lastMaxPosLog > 3600)
+      {
+         Print("DEBUG: Max positions reached");
+         lastMaxPosLog = TimeCurrent();
+      }
+      return;
+   }
 
    // Strategy Detection and Execution
    CheckAndExecuteStrategies();
@@ -728,11 +800,25 @@ void ManageOpenTrades()
 //+------------------------------------------------------------------+
 void CheckAndExecuteStrategies()
 {
+   static datetime lastStrategyCheckLog = 0;
+   static int checkCounter = 0;
+
+   checkCounter++;
+
+   // Log strategy checks every hour
+   if(TimeCurrent() - lastStrategyCheckLog > 3600)
+   {
+      Print("DEBUG: Strategy checks in last hour: ", checkCounter, " | Inside trading session!");
+      checkCounter = 0;
+      lastStrategyCheckLog = TimeCurrent();
+   }
+
    // Strategy A: Trend Continuation
    if(UseStrategy_TrendContinuation)
    {
       if(CheckTrendContinuationSetup())
       {
+         Print("DEBUG: Trend Continuation setup detected - Executing trade!");
          ExecuteStrategy(STRATEGY_TREND_CONTINUATION);
       }
    }
@@ -742,6 +828,7 @@ void CheckAndExecuteStrategies()
    {
       if(CheckSRBounceSetup())
       {
+         Print("DEBUG: S/R Bounce setup detected - Executing trade!");
          ExecuteStrategy(STRATEGY_SR_BOUNCE);
       }
    }
@@ -751,6 +838,7 @@ void CheckAndExecuteStrategies()
    {
       if(CheckBreakoutSetup())
       {
+         Print("DEBUG: Breakout setup detected - Executing trade!");
          ExecuteStrategy(STRATEGY_BREAKOUT);
       }
    }
@@ -760,6 +848,7 @@ void CheckAndExecuteStrategies()
    {
       if(CheckLondonOpenSetup())
       {
+         Print("DEBUG: London Open setup detected - Executing trade!");
          ExecuteStrategy(STRATEGY_LONDON_OPEN);
       }
    }
