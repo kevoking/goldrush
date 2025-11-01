@@ -6,6 +6,8 @@
 #property link      "https://www.yoursite.com"
 #property version   "1.00"
 
+#include "Enums.mqh"
+
 // Forward declaration
 #ifndef TECHNICAL_INDICATORS_INCLUDED
 #include "TechnicalIndicators.mqh"

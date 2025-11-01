@@ -6,6 +6,7 @@
 #property link      "https://www.yoursite.com"
 #property version   "1.00"
 
+#include "Enums.mqh"
 #include <Trade\Trade.mqh>
 
 //+------------------------------------------------------------------+
