@@ -6,6 +6,8 @@
 #property link      "https://www.yoursite.com"
 #property version   "1.00"
 
+#include <Trade\Trade.mqh>
+
 //+------------------------------------------------------------------+
 //| Trend Direction Enumeration                                       |
 //+------------------------------------------------------------------+
